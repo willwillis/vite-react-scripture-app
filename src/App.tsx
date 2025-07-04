@@ -8,6 +8,8 @@ import ChapterViewer from './components/ChapterViewer';
 import InstallPrompt from './components/InstallPrompt';
 import scripturesData from './data/lds-scriptures.json';
 import { parseScriptureUrl, findScriptureLocation, generateScriptureUrl, volumeNameToUrl } from './utils/navigation';
+import MarkdownPage from './components/MarkdownPage';
+import Button from '@mui/material/Button';
 
 // Types for scripture data
 type Volume = {
@@ -38,12 +40,19 @@ type RawVerse = {
   scripture_text: string;
 };
 
+const getMarkdownSlug = (hash: string): string | null => {
+  // Match #/pages/:slug
+  const match = hash.match(/^#\/pages\/([a-zA-Z0-9\-_]+)$/);
+  return match ? match[1] : null;
+};
+
 const App: React.FC = () => {
   const [selectedVolume, setSelectedVolume] = useState<Volume | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [highlightedVerses, setHighlightedVerses] = useState<number[]>([]);
   const [isNavigatingFromUrl, setIsNavigatingFromUrl] = useState(false);
+  const [markdownSlug, setMarkdownSlug] = useState<string | null>(getMarkdownSlug(window.location.hash));
 
   // Process the flat data into hierarchical structure
   const volumes: Volume[] = useMemo(() => {
@@ -111,6 +120,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleHashChange = () => {
       setIsNavigatingFromUrl(true);
+      const slug = getMarkdownSlug(window.location.hash);
+      setMarkdownSlug(slug);
+      if (slug) {
+        // If it's a markdown page, don't update scripture state
+        setTimeout(() => setIsNavigatingFromUrl(false), 100);
+        return;
+      }
       const location = parseScriptureUrl(window.location.hash);
       if (location) {
         const result = findScriptureLocation(volumes, location.volumeName, location.bookName, location.chapterNumber);
@@ -119,8 +135,6 @@ const App: React.FC = () => {
           setSelectedBook(result.book);
           setSelectedChapter(result.chapter);
           setHighlightedVerses(location.verseNumbers || []);
-          
-          // Scroll to highlighted verse if any
           if (location.verseNumbers && location.verseNumbers.length > 0) {
             setTimeout(() => {
               const firstVerse = document.getElementById(`verse-${location.verseNumbers![0]}`);
@@ -131,21 +145,16 @@ const App: React.FC = () => {
           }
         }
       }
-      // Reset the flag after a short delay
       setTimeout(() => setIsNavigatingFromUrl(false), 100);
     };
-
-    // Handle initial load
     handleHashChange();
-
-    // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [volumes]);
 
   // Update URL when selections change (but not from URL navigation)
   useEffect(() => {
-    if (!isNavigatingFromUrl) {
+    if (!isNavigatingFromUrl && !markdownSlug) {
       let url = '';
       
       if (selectedVolume && selectedBook && selectedChapter) {
@@ -165,7 +174,7 @@ const App: React.FC = () => {
         window.history.pushState(null, '', url);
       }
     }
-  }, [selectedVolume, selectedBook, selectedChapter, isNavigatingFromUrl]);
+  }, [selectedVolume, selectedBook, selectedChapter, isNavigatingFromUrl, markdownSlug]);
 
   // Reset lower selections when parent changes
   const handleSelectVolume = (volume: Volume) => {
@@ -197,38 +206,64 @@ const App: React.FC = () => {
       alignItems: 'flex-start',
       px: { xs: 1, sm: 2, md: 3 } // Reduced responsive padding
     }}>
-      <Box pt={{ xs: 1, sm: 2 }} pb={4} sx={{ width: '100%', flex: 1 }}>
+      <Box
+        sx={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mt: { xs: 3, sm: 4 },
+          mb: { xs: 2, sm: 3 }
+        }}
+      >
         <Typography 
           variant="h4" 
           align="center" 
-          gutterBottom
-          sx={{ 
+          sx={{
             fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-            mb: { xs: 2, sm: 3 }
+            m: 0
           }}
         >
           The Scriptures
         </Typography>
-        <VolumeSelector
-          volumes={volumes}
-          selectedVolume={selectedVolume}
-          onSelect={handleSelectVolume}
-        />
-        {selectedVolume && (
-          <BookSelector
-            books={selectedVolume.books}
-            selectedBook={selectedBook}
-            onSelect={handleSelectBook}
-          />
-        )}
-        {selectedBook && (
-          <ChapterViewer
-            book={selectedBook}
-            selectedChapter={selectedChapter}
-            onSelectChapter={handleSelectChapter}
-            highlightedVerses={highlightedVerses}
-            volumeName={selectedVolume?.name || ''}
-          />
+        <Box>
+          <a href="#/pages/about" style={{ textDecoration: 'none' }}>
+            <Button
+              size="small"
+              sx={{ ml: 2 }}
+            >
+              About
+            </Button>
+          </a>
+        </Box>
+      </Box>
+      <Box pb={4} sx={{ width: '100%', flex: 1 }}>
+        {markdownSlug ? (
+          <MarkdownPage slug={markdownSlug} />
+        ) : (
+          <>
+            <VolumeSelector
+              volumes={volumes}
+              selectedVolume={selectedVolume}
+              onSelect={handleSelectVolume}
+            />
+            {selectedVolume && (
+              <BookSelector
+                books={selectedVolume.books}
+                selectedBook={selectedBook}
+                onSelect={handleSelectBook}
+              />
+            )}
+            {selectedBook && (
+              <ChapterViewer
+                book={selectedBook}
+                selectedChapter={selectedChapter}
+                onSelectChapter={handleSelectChapter}
+                highlightedVerses={highlightedVerses}
+                volumeName={selectedVolume?.name || ''}
+              />
+            )}
+          </>
         )}
       </Box>
       <InstallPrompt />

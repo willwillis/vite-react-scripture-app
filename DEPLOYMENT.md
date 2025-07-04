@@ -1,6 +1,6 @@
 # GitHub Pages Deployment Guide
 
-This guide will help you deploy your Scripture Notes PWA to GitHub Pages using GitHub Actions.
+This guide will help you deploy your Scripture PWA to GitHub Pages using GitHub Actions.
 
 ## Prerequisites
 
