@@ -141,7 +141,7 @@ const App: React.FC = () => {
             mb: { xs: 2, sm: 3 }
           }}
         >
-          Scripture Reader
+          The Scriptures
         </Typography>
         <VolumeSelector
           volumes={volumes}
