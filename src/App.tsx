@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
@@ -7,6 +7,7 @@ import BookSelector from './components/BookSelector';
 import ChapterViewer from './components/ChapterViewer';
 import InstallPrompt from './components/InstallPrompt';
 import scripturesData from './data/lds-scriptures.json';
+import { parseScriptureUrl, findScriptureLocation, generateScriptureUrl, volumeNameToUrl } from './utils/navigation';
 
 // Types for scripture data
 type Volume = {
@@ -41,6 +42,8 @@ const App: React.FC = () => {
   const [selectedVolume, setSelectedVolume] = useState<Volume | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [highlightedVerses, setHighlightedVerses] = useState<number[]>([]);
+  const [isNavigatingFromUrl, setIsNavigatingFromUrl] = useState(false);
 
   // Process the flat data into hierarchical structure
   const volumes: Volume[] = useMemo(() => {
@@ -104,14 +107,76 @@ const App: React.FC = () => {
     return processedVolumes;
   }, []);
 
+  // Handle URL navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      setIsNavigatingFromUrl(true);
+      const location = parseScriptureUrl(window.location.hash);
+      if (location) {
+        const result = findScriptureLocation(volumes, location.volumeName, location.bookName, location.chapterNumber);
+        if (result) {
+          setSelectedVolume(result.volume);
+          setSelectedBook(result.book);
+          setSelectedChapter(result.chapter);
+          setHighlightedVerses(location.verseNumbers || []);
+          
+          // Scroll to highlighted verse if any
+          if (location.verseNumbers && location.verseNumbers.length > 0) {
+            setTimeout(() => {
+              const firstVerse = document.getElementById(`verse-${location.verseNumbers![0]}`);
+              if (firstVerse) {
+                firstVerse.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 100);
+          }
+        }
+      }
+      // Reset the flag after a short delay
+      setTimeout(() => setIsNavigatingFromUrl(false), 100);
+    };
+
+    // Handle initial load
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [volumes]);
+
+  // Update URL when selections change (but not from URL navigation)
+  useEffect(() => {
+    if (!isNavigatingFromUrl) {
+      let url = '';
+      
+      if (selectedVolume && selectedBook && selectedChapter) {
+        // Full navigation: volume/book/chapter
+        url = generateScriptureUrl(selectedVolume.name, selectedBook.name, selectedChapter.number);
+      } else if (selectedVolume && selectedBook) {
+        // Partial navigation: volume/book
+        url = `#/${volumeNameToUrl(selectedVolume.name)}/${selectedBook.name.toLowerCase().replace(/\s+/g, '-')}`;
+      } else if (selectedVolume) {
+        // Volume only: volume
+        url = `#/${volumeNameToUrl(selectedVolume.name)}`;
+      }
+      
+      // Only update URL if it's different from current hash
+      if (url && window.location.hash !== url) {
+        // Use pushState to create a new history entry for user navigation
+        window.history.pushState(null, '', url);
+      }
+    }
+  }, [selectedVolume, selectedBook, selectedChapter, isNavigatingFromUrl]);
+
   // Reset lower selections when parent changes
   const handleSelectVolume = (volume: Volume) => {
     setSelectedVolume(volume);
     setSelectedBook(null);
     setSelectedChapter(null);
+    setHighlightedVerses([]); // Clear highlights when changing volume
   };
   const handleSelectBook = (book: Book) => {
     setSelectedBook(book);
+    setHighlightedVerses([]); // Clear highlights when changing book
     // Auto-select first chapter if book has only one chapter
     if (book.chapters.length === 1) {
       setSelectedChapter(book.chapters[0]);
@@ -121,6 +186,7 @@ const App: React.FC = () => {
   };
   const handleSelectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);
+    setHighlightedVerses([]); // Clear highlights when changing chapter
   };
 
   return (
@@ -160,6 +226,8 @@ const App: React.FC = () => {
             book={selectedBook}
             selectedChapter={selectedChapter}
             onSelectChapter={handleSelectChapter}
+            highlightedVerses={highlightedVerses}
+            volumeName={selectedVolume?.name || ''}
           />
         )}
       </Box>
