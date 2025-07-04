@@ -1,5 +1,5 @@
 # Scripture Progressive Web App (PWA)
-Serving up an 18MB json file a chapter at a time. There's a big up-front cost with the large download, but offered as a PWA install so it only needs to be downloaded once.
+Serving up an 18MB json file so you can read keep a digital copy of your scriptures on the go. There's a big up-front cost with the large download, but offered as a PWA install so it only needs to be downloaded once.
 
 First time messing around with vite. I like it.
 
