@@ -227,6 +227,15 @@ const App: React.FC = () => {
           The Scriptures
         </Typography>
         <Box>
+        <a href="/" style={{ textDecoration: 'none' }}>
+            <Button
+              size="small"
+              sx={{ ml: 2 }}
+            >
+              Home
+            </Button>
+          </a>
+
           <a href="#/pages/about" style={{ textDecoration: 'none' }}>
             <Button
               size="small"
@@ -235,6 +244,7 @@ const App: React.FC = () => {
               About
             </Button>
           </a>
+
         </Box>
       </Box>
       <Box pb={4} sx={{ width: '100%', flex: 1 }}>

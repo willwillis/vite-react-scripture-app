@@ -45,7 +45,7 @@ const MarkdownPage: React.FC<MarkdownPageProps> = ({ slug }) => {
 
   return (
     <Box sx={{
-      maxWidth: 700,
+      maxWidth: 1000,
       mx: 'auto',
       mt: 4,
       px: { xs: 2, sm: 3 },
