@@ -112,7 +112,12 @@ const App: React.FC = () => {
   };
   const handleSelectBook = (book: Book) => {
     setSelectedBook(book);
-    setSelectedChapter(null);
+    // Auto-select first chapter if book has only one chapter
+    if (book.chapters.length === 1) {
+      setSelectedChapter(book.chapters[0]);
+    } else {
+      setSelectedChapter(null);
+    }
   };
   const handleSelectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);
