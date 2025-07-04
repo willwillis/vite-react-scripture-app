@@ -72,3 +72,5 @@ export default tseslint.config([
   },
 ])
 ```
+# Thanks
+This wouldn't be possible without beandog making these scriptures availble through the [nephi project](https://scriptures.nephi.org/). [Github repo](https://github.com/beandog/lds-scriptures)
